@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in | LearnHub</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script defer src="/js/app.js"></script>
+</head>
+<body class="auth-body">
+
+<main class="lamp-intro" id="lamp-intro">
+    <div class="lamp-room-glow"></div>
+    <div class="particle-field" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+
+    <header class="topbar">
+        <a class="brand" href="/"><span class="brand-mark">L</span> LearnHub</a>
+        <a class="nav-login" href="/">← Back to home</a>
+    </header>
+
+    <div class="lamp-welcome-copy">
+        <div class="eyebrow">WELCOME TO LEARNHUB</div>
+        <h1>Your next step<br>starts <span>here.</span></h1>
+        <p id="lamp-instruction">Pull the chain to begin your learning journey.</p>
+    </div>
+
+    <div class="hanging-lamp">
+        <div class="lamp-ceiling-cap"></div>
+        <div class="lamp-wire"></div>
+        <div class="lamp-shade"></div>
+        <div class="lamp-bulb"></div>
+        <div class="lamp-light-cone"></div>
+
+        <div class="lamp-pull-wrap">
+            <button type="button" class="lamp-pull" id="lamp-pull"
+                aria-label="Pull the lamp chain">
+                <span class="pull-chain" aria-hidden="true">
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                    <span class="chain-link"></span><span class="chain-link"></span>
+                </span>
+                <span class="pull-handle"></span>
+            </button>
+            <span class="pull-hint" aria-hidden="true">PULL</span>
+        </div>
+    </div>
+
+    <div class="lamp-floor-glow"></div>
+
+    <section class="lamp-login-panel" id="lamp-login-panel" aria-hidden="true">
+        <div class="lamp-login-heading">
+            <div class="lamp-login-mark">L</div>
+            <div>
+                <p>STUDENT ACCESS</p>
+                <h2>Welcome back</h2>
+            </div>
+        </div>
+
+        <p class="lamp-login-subtitle">Log in to open your learning dashboard.</p>
+
+        <form id="login-form" class="lamp-login-form">
+            <label>
+                Email address
+                <input name="email" type="email" placeholder="you@example.com" required>
+            </label>
+
+            <label>
+                Password
+                <input name="password" type="password" placeholder="Enter your password" required>
+            </label>
+
+            <button class="btn btn-full" type="submit">Log in →</button>
+            <div class="form-message" id="login-message"></div>
+        </form>
+
+        <p class="lamp-login-register">
+            New to LearnHub? <a href="/register.html">Create an account</a>
+        </p>
+    </section>
+
+    <div class="lamp-intro-footer">LEARN • BUILD • GROW</div>
+</main>
+
+</body>
+</html>

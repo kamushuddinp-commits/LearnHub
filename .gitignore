@@ -1,0 +1,29 @@
+target/
+.idea/
+.vscode/
+.DS_Store
+.env
+*.log
+
+# Java compiled files
+target/
+*.class
+
+# IDE settings
+.idea/
+.vscode/
+
+# Mac system files
+.DS_Store
+
+# Environment and secret files
+.env
+.env.*
+!.env.example
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+

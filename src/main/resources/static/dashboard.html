@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>My Dashboard | LearnHub</title><link rel="stylesheet" href="/css/style.css"><script defer src="/js/app.js"></script></head><body><header class="topbar"><a class="brand" href="/"><span class="brand-mark">L</span> LearnHub</a><nav><a href="/courses.html">Explore courses</a><a class="active" href="/dashboard.html">Dashboard</a><a href="#ai-study-lab">AI Study Lab</a></nav><div class="nav-actions"><button class="btn btn-small btn-outline" id="logout-button">Log out</button></div></header><main class="page-wrap"><div class="dashboard-welcome"><div><div class="eyebrow">YOUR LEARNING SPACE</div><h1>Hello, <span id="student-name">learner</span>.</h1><p>Every course is a new opportunity. Keep going.</p></div><a class="btn" href="/courses.html">Explore courses ↗</a></div><div class="dashboard-metrics"><div><span>ENROLLED COURSES</span><strong id="enrolled-total">0</strong></div><div><span>LEARNING STATUS</span><strong>In progress</strong></div><div><span>YOUR ACCOUNT</span><strong id="student-email">Student</strong></div></div><div class="section-head dashboard-head"><div><div class="eyebrow">YOUR CURRENT PATH</div><h2>My courses<span>.</span></h2></div></div><div id="my-courses" class="course-grid"><div class="loading">Loading your courses...</div></div><section class="ai-lab" id="ai-study-lab">
+  <div class="eyebrow">YOUR PERSONAL LEARNING COPILOT</div>
+  <h2>AI Study Lab<span>.</span></h2>
+  <p class="ai-intro">Get help understanding topics, revising notes, and preparing for assessments.</p>
+  <form id="ai-form" class="ai-form">
+    <label for="ai-prompt">What are you learning today?</label>
+    <textarea id="ai-prompt" rows="4" placeholder="Enter a topic or paste your class notes..." required></textarea>
+    <button class="btn" type="submit">Ask AI <span>→</span></button>
+  </form>
+  <div class="ai-tools">
+    <button type="button" data-ai-tool="explain">✦ Explain topic</button>
+    <button type="button" data-ai-tool="summarize">▤ Summarize notes</button>
+    <button type="button" data-ai-tool="quiz">✓ Make a quiz</button>
+    <button type="button" data-ai-tool="flashcards">▣ Create flashcards</button>
+    <button type="button" data-ai-tool="plan">◷ 7-day study plan</button>
+  </div>
+  <p id="ai-status" class="ai-status" aria-live="polite">Choose a tool or ask your own question.</p>
+  <article id="ai-result" class="ai-result" aria-live="polite"></article>
+  <p class="ai-disclaimer">AI can make mistakes. Verify important facts with your course material.</p>
+</section>
+<div class="notice" id="dashboard-notice"></div></main><footer><a class="brand" href="/"><span class="brand-mark">L</span> LearnHub</a><span>© 2026 LearnHub</span></footer></body></html>
