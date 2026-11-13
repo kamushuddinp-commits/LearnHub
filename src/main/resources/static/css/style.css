@@ -1171,3 +1171,6 @@ input:focus,
   65% { opacity: .65; }
   100% { transform: translate3d(var(--particle-target-x), calc(-100vh + 430px), 0) scale(.18); opacity: 0; }
 }
+
+/* Make lamp chain clickable */
+.lamp-pull { pointer-events: auto; }
