@@ -10,15 +10,15 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.16</version>
+        <version>3.5.7</version>
         <relativePath/>
     </parent>
 
     <groupId>com.learnhub</groupId>
     <artifactId>skillsphere</artifactId>
     <version>1.0.0</version>
-    <name>LearnHub</name>
-    <description>Online Learning Management System</description>
+    <name>SkillSphere</name>
+    <description>SkillSphere Learning Platform</description>
 
     <properties>
         <java.version>21</java.version>
@@ -38,23 +38,23 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- PostgreSQL Database -->
+        <!-- Validation -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL: only one declaration -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Spring Security Crypto -->
+        <!-- Spring Security password encryption utilities -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-crypto</artifactId>
-        </dependency>
-
-        <!-- Spring Boot Validation -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
         <!-- Spring Boot Test -->
@@ -69,7 +69,6 @@
     <build>
         <plugins>
 
-            <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
