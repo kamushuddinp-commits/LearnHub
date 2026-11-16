@@ -923,12 +923,24 @@ input:focus,
   color: #b0bbc8;
 }
 
-.form-message.error {
+.form-message.error,
+.ai-status.error {
   color: #ff9a9a;
 }
 
-.form-message.success {
+.form-message.success,
+.ai-status.success {
   color: #8fe0b6;
+}
+
+.ai-status.loading {
+  color: #f3d587;
+}
+
+.ai-tools button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+  pointer-events: none;
 }
 
 .ai-tools button {

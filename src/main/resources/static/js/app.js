@@ -717,18 +717,23 @@ if (aiForm) {
 
   const runAI = async prompt => {
     if (!prompt.trim()) {
+      status.className = 'ai-status';
       status.textContent =
         'Enter a topic or some notes first.';
       return;
     }
 
+    status.className = 'ai-status loading';
     status.textContent = 'AI is preparing your answer...';
     result.textContent = '';
 
-    const button =
+    const submitBtn =
       aiForm.querySelector('button[type="submit"]');
+    const toolButtons =
+      document.querySelectorAll('[data-ai-tool]');
 
-    if (button) button.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
+    toolButtons.forEach(btn => (btn.disabled = true));
 
     try {
       const data = await api('/ai/ask', {
@@ -737,14 +742,17 @@ if (aiForm) {
       });
 
       result.textContent = data.answer;
+      status.className = 'ai-status success';
       status.textContent =
         'Ready · Review the answer and ask a follow-up.';
 
     } catch (error) {
+      status.className = 'ai-status error';
       status.textContent = error.message;
 
     } finally {
-      if (button) button.disabled = false;
+      if (submitBtn) submitBtn.disabled = false;
+      toolButtons.forEach(btn => (btn.disabled = false));
     }
   };
 
@@ -752,7 +760,7 @@ if (aiForm) {
     event.preventDefault();
 
     runAI(
-      `You are SkillSphere's friendly academic tutor.
+      `You are LearnHub's friendly academic tutor.
 Explain clearly for a beginner, use headings and examples,
 and keep the answer accurate.
 
