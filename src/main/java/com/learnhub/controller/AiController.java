@@ -20,35 +20,23 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/ai/ask")
 public class AiController {
 
     private static final Logger logger = LoggerFactory.getLogger(AiController.class);
-
-    private static final String GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta/models/";
-
-    // Known reliable models for fallback in order of preference
-    private static final List<String> KNOWN_MODELS = List.of(
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-2.5-flash"
-    );
+    private static final String GEMINI_API_URL =
+            "https://generativelanguage.googleapis.com/v1beta/interactions";
 
     @Value("${gemini.api.key:${GEMINI_API_KEY:}}")
     private String apiKey;
 
-    @Value("${gemini.model:${GEMINI_MODEL:gemini-2.5-flash}}")
+    @Value("${gemini.model:${GEMINI_MODEL:gemini-3.8-flash}}")
     private String configuredModel;
 
     private final ObjectMapper mapper = new ObjectMapper();
-
     private final HttpClient client;
 
     @FunctionalInterface
@@ -62,7 +50,8 @@ public class AiController {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(15))
                 .build();
-        this.responseSender = req -> this.client.send(req, HttpResponse.BodyHandlers.ofString());
+        this.responseSender = request ->
+                this.client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
     public AiController(ResponseSender responseSender, String apiKey, String configuredModel) {
@@ -74,7 +63,10 @@ public class AiController {
 
     @PostMapping
     public Map<String, String> ask(@RequestBody Map<String, String> body) {
-        String prompt = body != null ? body.getOrDefault("prompt", "").trim() : "";
+
+        String prompt = body != null
+                ? body.getOrDefault("prompt", "").trim()
+                : "";
 
         if (prompt.isBlank()) {
             throw new ResponseStatusException(
@@ -84,189 +76,170 @@ public class AiController {
         }
 
         if (apiKey == null || apiKey.isBlank()) {
-            logger.warn("AI request rejected: GEMINI_API_KEY is not configured");
+            logger.warn("Gemini API key is not configured");
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
-                    "AI is not configured yet. Add GEMINI_API_KEY and restart LearnHub."
+                    "AI is not configured. Please check the GEMINI_API_KEY setting."
             );
         }
 
-        List<String> modelsToTry = getModelsToTry();
-        String lastErrorMessage = null;
-        int lastStatusCode = 0;
+        String model = configuredModel == null || configuredModel.isBlank()
+                ? "gemini-3.8-flash"
+                : configuredModel.trim();
 
-        for (String model : modelsToTry) {
-            try {
-                String requestJson = mapper.writeValueAsString(
-                        Map.of(
-                                "contents", new Object[]{
-                                        Map.of(
-                                                "parts", new Object[]{
-                                                        Map.of("text", prompt)
-                                                }
-                                        )
-                                },
-                                "generationConfig", Map.of(
-                                        "temperature", 0.7,
-                                        "maxOutputTokens", 2048
-                                )
-                        )
-                );
+        try {
+            String requestJson = mapper.writeValueAsString(Map.of(
+                    "model", model,
+                    "input", prompt,
+                    "store", false
+            ));
 
-                // Authenticate via x-goog-api-key header to prevent API key exposure in URLs and logs
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(GEMINI_API_BASE + model + ":generateContent"))
-                        .timeout(Duration.ofSeconds(45))
-                        .header("Content-Type", "application/json")
-                        .header("x-goog-api-key", apiKey.trim())
-                        .POST(HttpRequest.BodyPublishers.ofString(requestJson))
-                        .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GEMINI_API_URL))
+                    .timeout(Duration.ofSeconds(60))
+                    .header("Content-Type", "application/json")
+                    .header("x-goog-api-key", apiKey.trim())
+                    .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+                    .build();
 
-                HttpResponse<String> response = responseSender.send(request);
+            HttpResponse<String> response = responseSender.send(request);
+            int status = response.statusCode();
 
-                int statusCode = response.statusCode();
-
-                if (statusCode >= 200 && statusCode < 300) {
-                    String answer = parseSuccessfulResponse(response.body());
-                    logger.info("AI response successfully generated using model: {}", model);
-                    return Map.of("answer", answer);
-                }
-
-                lastStatusCode = statusCode;
-                lastErrorMessage = extractSafeErrorMessage(response.body());
-                logger.warn("Gemini API call to model '{}' failed with HTTP {}: {}", model, statusCode, lastErrorMessage);
-
-                // Authentication or permission errors cannot be resolved by fallback
-                if (statusCode == 401 || statusCode == 403) {
-                    throw new ResponseStatusException(
-                            HttpStatus.UNAUTHORIZED,
-                            "Invalid or unauthorized Gemini API key. Please check your GEMINI_API_KEY environment variable."
-                    );
-                }
-
-                // If quota exhausted, don't keep hammering other models with the same project quota
-                if (statusCode == 429) {
-                    throw new ResponseStatusException(
-                            HttpStatus.TOO_MANY_REQUESTS,
-                            "Gemini API rate limit or quota exceeded. Please wait a moment and try again."
-                    );
-                }
-
-                // For 404 (model not found) or 503 (model capacity exhausted), loop will try next fallback model
-                logger.info("Model '{}' was unavailable (HTTP {}). Checking fallback models...", model, statusCode);
-
-            } catch (ResponseStatusException ex) {
-                throw ex;
-            } catch (HttpTimeoutException ex) {
-                logger.error("Gemini API call to model '{}' timed out: {}", model, ex.getMessage());
-                lastStatusCode = HttpStatus.GATEWAY_TIMEOUT.value();
-                lastErrorMessage = "Connection to AI service timed out.";
-            } catch (Exception ex) {
-                logger.error("Error communicating with Gemini model '{}': {}", model, ex.getMessage());
-                lastErrorMessage = ex.getMessage();
+            if (status >= 200 && status < 300) {
+                String answer = parseSuccessfulResponse(response.body());
+                logger.info("Gemini interaction completed using model: {}", model);
+                return Map.of("answer", answer);
             }
-        }
 
-        // All models failed or were exhausted
-        if (lastStatusCode == 503 || (lastErrorMessage != null && lastErrorMessage.toLowerCase().contains("capacity"))) {
+            String error = extractSafeErrorMessage(response.body());
+            logger.error("Gemini Interactions API returned HTTP {}: {}", status, error);
+
+            if (status == 401 || status == 403) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Gemini API key is invalid or not authorized. Check your API key."
+                );
+            }
+
+            if (status == 429) {
+                throw new ResponseStatusException(
+                        HttpStatus.TOO_MANY_REQUESTS,
+                        "Gemini API quota or rate limit reached. Please try again later."
+                );
+            }
+
+            if (status == 503 || status == 504) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Gemini is temporarily unavailable. Please try again shortly."
+                );
+            }
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "The AI service is currently at capacity. Please try again in a moment."
+                    "Gemini API request failed: " + error
+            );
+
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (HttpTimeoutException ex) {
+            logger.error("Gemini request timed out", ex);
+            throw new ResponseStatusException(
+                    HttpStatus.GATEWAY_TIMEOUT,
+                    "Gemini took too long to respond. Please try again."
+            );
+        } catch (Exception ex) {
+            logger.error("Error communicating with Gemini", ex);
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Could not connect to the Gemini AI service. Please try again."
             );
         }
-
-        String clientMessage = (lastErrorMessage != null && !lastErrorMessage.isBlank())
-                ? "The AI service could not complete that request: " + lastErrorMessage
-                : "The AI service could not complete that request. Check your API key and try again.";
-
-        throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, clientMessage);
-    }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex) {
-        Map<String, Object> body = Map.of(
-                "error", ex.getStatusCode().toString(),
-                "status", ex.getStatusCode().value(),
-                "message", ex.getReason() != null ? ex.getReason() : "An error occurred"
-        );
-        return ResponseEntity.status(ex.getStatusCode()).body(body);
-    }
-
-    private List<String> getModelsToTry() {
-        Set<String> models = new LinkedHashSet<>();
-        if (configuredModel != null && !configuredModel.isBlank()) {
-            models.add(configuredModel.trim());
-        }
-        models.addAll(KNOWN_MODELS);
-        return new ArrayList<>(models);
     }
 
     private String parseSuccessfulResponse(String responseBody) {
         try {
             JsonNode root = mapper.readTree(responseBody);
-            JsonNode candidates = root.path("candidates");
 
-            if (!candidates.isArray() || candidates.isEmpty()) {
-                JsonNode blockReason = root.path("promptFeedback").path("blockReason");
-                if (!blockReason.isMissingNode() && !blockReason.asText().isBlank()) {
-                    throw new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "AI safety filters blocked this prompt: " + blockReason.asText()
-                    );
-                }
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_GATEWAY,
-                        "The AI service returned no response candidates."
-                );
+            JsonNode directText = root.path("output_text");
+            if (directText.isTextual() && !directText.asText().isBlank()) {
+                return directText.asText().trim();
             }
 
-            StringBuilder textBuilder = new StringBuilder();
-            JsonNode parts = candidates.path(0).path("content").path("parts");
+            StringBuilder answer = new StringBuilder();
+            JsonNode steps = root.path("steps");
 
-            if (parts.isArray()) {
-                for (JsonNode part : parts) {
-                    if (part.has("text")) {
-                        textBuilder.append(part.path("text").asText());
+            if (steps.isArray()) {
+                for (JsonNode step : steps) {
+                    if ("model_output".equals(step.path("type").asText())) {
+                        JsonNode content = step.path("content");
+                        if (content.isArray()) {
+                            for (JsonNode item : content) {
+                                if ("text".equals(item.path("type").asText())) {
+                                    answer.append(item.path("text").asText());
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            String answer = textBuilder.toString().trim();
+            String result = answer.toString().trim();
 
-            if (answer.isBlank()) {
+            if (result.isBlank()) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_GATEWAY,
-                        "The AI service returned an empty answer. Please try again."
+                        "Gemini returned an empty answer. Please try again."
                 );
             }
 
-            return answer;
+            return result;
 
         } catch (ResponseStatusException ex) {
             throw ex;
         } catch (Exception ex) {
-            logger.error("Failed to parse Gemini API JSON response", ex);
+            logger.error("Could not parse Gemini response", ex);
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
-                    "Failed to parse response from the AI service."
+                    "Could not read the response from Gemini."
             );
         }
     }
 
     private String extractSafeErrorMessage(String responseBody) {
         if (responseBody == null || responseBody.isBlank()) {
-            return "Empty response from AI service";
+            return "Empty response from Gemini.";
         }
+
         try {
             JsonNode root = mapper.readTree(responseBody);
             String message = root.path("error").path("message").asText("");
+
             if (!message.isBlank()) {
-                // Ensure no API keys or sensitive values are retained
-                return message.replaceAll("key=[A-Za-z0-9_-]+", "key=REDACTED");
+                return message.replaceAll(
+                        "key=[A-Za-z0-9_-]+",
+                        "key=REDACTED"
+                );
             }
         } catch (Exception ignored) {
-            // Non-JSON response
+            // Ignore non-JSON error responses.
         }
-        return "HTTP error from AI service";
+
+        return "HTTP error from Gemini.";
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(
+            ResponseStatusException ex) {
+
+        Map<String, Object> body = Map.of(
+                "error", ex.getStatusCode().toString(),
+                "status", ex.getStatusCode().value(),
+                "message", ex.getReason() != null
+                        ? ex.getReason()
+                        : "An error occurred"
+        );
+
+        return ResponseEntity.status(ex.getStatusCode()).body(body);
     }
 }
