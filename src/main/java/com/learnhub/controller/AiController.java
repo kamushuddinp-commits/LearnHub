@@ -38,7 +38,7 @@ public class AiController {
     private static final List<String> KNOWN_MODELS = List.of(
             "gemini-2.5-flash",
             "gemini-2.0-flash",
-            "gemini-1.5-flash"
+            "gemini-2.5-flash"
     );
 
     @Value("${gemini.api.key:${GEMINI_API_KEY:}}")
